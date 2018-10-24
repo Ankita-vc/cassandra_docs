@@ -1,0 +1,7 @@
+Cassandra - CQL
+
+1)Cassandra defines a table to be a logical division that associates similar data.
+2) We could call these name/value pairs columns. We could call each separate entity that holds some set of columns rows. And the unique identifier for each row could be called a row key or primary key
+3)Cassandra defines a table to be a logical division that associates similar data. 
+4)However, when you’re working with Cassandra, you actually have a decision to make about the size of your rows: they can be wide or skinny, depending on the number of columns the row contains.A wide row means a row that has lots and lots (perhaps tens of thousands or even millions) of columns. Typically there is a smaller number of rows that go along with so many columns.
+5)Cassandra uses a special primary key called a composite key (or compound key) to represent wide rows, also called partitions. 
