@@ -1,0 +1,124 @@
+Introduction to cassandra:-
+Facebook developed cassandra in 2008 for solving inbox search problem which needed faster writes in larger amount.
+It is based on google's Bigtable(distributed storage system for structured data) and amazon's highly available key-value store(dynamo).
+Some of the companies which largely uses cassandra are FaceBook, Netflix,  Instagram, eBay, Twitter, Reddit and Apple. Recently it was revealed that Apple has one of the largest production of Cassandra deployment, a mind blowing 75,000 nodes storing over 10 PB of data. 
+
+In short, Apache Cassandra™ is a massively scalable open source NoSQL database. When you need scalability and high availability without compromising performance then Cassandra is the answer. Cassandra is capable of handling the huage data across multiple servers with no single point of failure. Cassandra can have mix of structured, semi-structured, and unstructured data.
+
+Lets see in brief SQL vs. NoSQL---
+SQL -- Nosql (advantages and disadv.)
+SQL-
+Structured Query Language (SQL) happens to be the more structured, rigid way of storing data, like a phone book. 
+For a relational database to be effective, you’ll have to store your data in a very organized fashion.
+
+advantages-
+1)ACID (Atomicity, Consistency, Isolation, Durability) compliance reduces anomalies and
+protects the integrity of your database by suggesting precisely how transactions interact with the database. 
+2) If your company isn’t seeing a massive growth, which would require more servers and you’re only working with consistent data, 
+then there’s probably no reason to use a system designed to support high traffic volume and a huge number of data types.
+3)If your company isn’t seeing a massive growth, which would require more servers and you’re only working with consistent data, 
+then there’s probably no reason to use a system designed to support high traffic volume and a huge number of data types.
+
+Disadvantages:-
+1)The main problem with SQL is scaling it as your database grows. You see, even though scalability is usually tested in production environments, it’s often lower than NoSQL databases.
+
+NoSql-
+If your organization is dealing with massive amounts of unstructured data and your data requirements aren’t clear at the outset, 
+you probably don’t have the luxury of developing a relational database with a clearly defined schema. You get much more flexibility than its traditional counterparts, with non-relational databases
+
+Advantages:-
+1)The real NoSQL motivator here is Big data, driving the popularity of NoSQL databases like CouchDB, MongoDB, Cassandra, and HBase. 
+NoSQL databases ensure data doesn’t become the bottleneck
+2)You can store huge amounts of data with little to no structure. Also, NoSQL database sets no limits on the types of data you can store together, 
+allowing you to add more new types as your needs change.
+3)For companies looking to integrate Big Data, the lower cost, easier scalability, and open source features of NoSQL make for an appealing option.  
+https://medium.com/swlh/should-you-use-nosql-or-sql-db-or-both-349cb26c9add
+https://www.datastax.com/wp-content/uploads/2012/08/WP-DataStax-MySQLtoCassandra.pdf?1
+sql vs. nosql
+https://www.thegeekstuff.com/2014/01/sql-vs-nosql-db/?utm_source=tuicool
+
+brief of cassandra features(why to prefer):-\
+https://www.datastax.com/wp-content/uploads/2012/08/WP-DataStax-MySQLtoCassandra.pdf?1
+
+Cassandra's design choices:-
+CAP theorem ----
+e.x In facebook if your friend posts something that might not be visible to eveyone immediately. It takes some time to update the changes the
+changes to all the replicas but it prefers availability. So still you will be able to see some results that may not be updated but available.
+Cassandra is eventually consistent, means with time data will be consistent across the replicas. But cassandra is tuneably consistent,
+means youn can decide various parameters based on the consistency level you want.(will see this later what tuneable consistency means and related
+(ith diagram of triangle)
+
+1How does cassandra know which data on which node ?******************************________________*******************************
+2)How does cassandra stores data?********
+https://dzone.com/articles/cassandra-data-modeling-primary-clustering-partiti
+https://www.hakkalabs.co/articles/how-cassandra-stores-data
+3)How does cassandra returns the data to the client---(client communication...)
+
+1) (Gossip Protocol- All nodes are equal, communicate with each other to know about data location, which nodes are down/up(snitch))
+
+4)CQL- LImitations over SQL( 1)we cant perform joins, so store data in denormalized form. 2)All queries must be on primary key otherwise it will give error.So, we can form secondary index.
+
+5)cassandra architecture (topology, ring, gossip protocol, data structures(snitches, mmtables), client communication with cassandra nodes...  discusss various different keys with example )
+
+6) Replication strategies(2 primary types)
+7) tuneable consistency.
+
+1)Cassandra architecture:-
+---racks and data centres- Cassandra is frequently used in systems spanning physically separate locations. Cassandra provides two levels of grouping that are used to describe the topology of a cluster: data center and rack. A rack is a logical set of nodes in close proximity to each other. A data center is a logical set of racks, perhaps located in the same building and connected by reliable network.
+
+Now , lets see How does cassandra exchanges information in between nodes.
+Gossip and Failure Detection-
+To support decentralization and partition tolerance, Cassandra uses a gossip protocol that allows each node to keep track of state information about the other nodes in the cluster. The gossiper runs every second on a timer.
+The gossip protocol in Cassandra is primarily implemented by the org.apache.cassandra.gms.Gossiper class,  which is responsible for managing gossip for the local node. When a server node is started, it registers itself with the gossiper to receive endpoint state information.
+
+Because Cassandra gossip is used for failure detection, the Gossiper class maintains a list of nodes that are alive and dead.
+
+Here is how the gossiper works:
+
+Once per second, the gossiper will choose a random node in the cluster and initialize a gossip session with it. Each round of gossip requires three messages.
+
+The gossip initiator sends its chosen friend a GossipDigestSynMessage.
+
+When the friend receives this message, it returns a GossipDigestAckMessage.
+
+When the initiator receives the ack message from the friend, it sends the friend a GossipDigestAck2Message to complete the round of gossip.
+
+When the gossiper determines that another endpoint is dead, it “convicts” that endpoint by marking it as dead in its local list and logging that fact.
+
+Failure detection is implemented in Cassandra by the org.apache.cassandra.gms.​FailureDetector class, which implements the org.apache.cassandra.gms.IFailureDetector interface.   Together, they allow operations including:
+
+isAlive(InetAddress)
+What the detector will report about a given node’s alive-ness.
+
+interpret(InetAddress)
+Used by the gossiper to help it decide whether a node is alive or not based on suspicion level reached by calculating Phi (as described in the Hayashibara paper).
+
+report(InetAddress)
+When a node receives a heartbeat, it invokes this method.
+
+Snitches ---
+The job of a snitch is to determine relative host proximity for each node in a cluster, which is used to determine which nodes to read and write from. Snitches gather information about your network topology so that Cassandra can efficiently route requests. The snitch will figure out where nodes are in relation to other nodes.. The role of the snitch is to help identify the replica that will return the fastest, and this is the replica which is queried for the full data.
+The default snitch (the SimpleSnitch) is topology unaware; that is, it does not know about the racks and data centers in a cluster, which makes it unsuitable for multi-data center deployments. For this reason, Cassandra comes with several snitches for different cloud environments including Amazon EC2, Google Cloud, and Apache Cloudstack.
+While Cassandra provides a pluggable way to statically describe your cluster’s topology, it also provides a feature called dynamic snitching that helps optimize the routing of reads and writes over time.The dynamic snitch gets its basic understanding of the topology from the selected snitch. It then monitors the performance of requests to the other nodes, even keeping track of things like which nodes are performing compaction. The performance data is used to select the best replica for each query. 
+
+Rings and Tokens---
+Cassandra represents the data managed by a cluster as a ring. Each node in the ring is assigned one or more ranges of data described by a token, which determines its position in the ring. A token is a 64-bit integer ID used to identify each partition. This gives a possible range for tokens from –263 to 263–1.
+
+Data is assigned to nodes by using a hash function to calculate a token for the partition key. This partition key token is compared to the token values for the various nodes to identify the range, and therefore the node, that owns the data.
+
+Virtual nodes:--
+Early versions of Cassandra assigned a single token to each node, in a fairly static manner, requiring you to calculate tokens for each node. Although there are tools available to calculate tokens based on a given number of nodes, it was still a manual process to configure the initial_token property for each node in the cassandra.yaml file. This also made adding or replacing a node an expensive operation, as rebalancing the cluster required moving a lot of data.
+Cassandra’s 1.2 release introduced the concept of virtual nodes, also called vnodes for short. Instead of assigning a single token to a node, the token range is broken up into multiple smaller ranges. Each physical node is then assigned multiple tokens. By default, each node will be assigned 256 of these tokens, meaning that it contains 256 virtual nodes. Virtual nodes have been enabled by default since 2.0.For nodes in your cluster that have more computing resources available to them, you can increase the number of vnodes by setting the num_tokens property in the cassandra.yaml file.
+
+Partitioners--
+A partitioner determines how data is distributed across the nodes in the cluster. As we learned in Chapter 5, Cassandra stores data in wide rows, or “partitions.” Each row has a partition key that is used to identify the partition. A partitioner, then, is a hash function for computing the token of a partition key. Each row of data is distributed within the ring according to the value of the partition key token.
+
+Replication Strategies--
+A node serves as a replica for different ranges of data. If one node goes down, other replicas can respond to queries for that range of data. Cassandra replicates data across nodes in a manner transparent to the user, and the replication factor is the number of nodes in your cluster that will receive copies (replicas) of the same data. If your replication factor is 3, then three nodes in the ring will have copies of each row.
+replication strategie;
+https://teddyma.gitbooks.io/learncassandra/content/replication/replication_strategies.html
+
+
+
+consistent-
+ Because Cassandra is eventually consistent, updates to other replica nodes may continue in the background.

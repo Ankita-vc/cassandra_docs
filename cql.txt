@@ -1,0 +1,160 @@
+To connect to a specific node, specify the hostname and port on the command line. For example, the following will connect to our local node:
+
+$ bin/cqlsh localhost 9042
+
+To learn about the current cluster you’re working in, type:
+
+DESCRIBE CLUSTER;
+
+To see which keyspaces are available in the cluster, issue this command:
+
+DESCRIBE KEYSPACES;
+
+Initially this list will consist of several system keyspaces. Once you have created your own keyspaces, they will be shown as well. The system keyspaces are managed internally by Cassandra, and aren’t for us to put data into.
+
+Cassandra uses these keyspaces to store the schema, tracing, and security information. 
+
+Let’s create our own keyspace so we have something to write data to. In creating our keyspace, there are some required options. To walk through these options, we could use the command HELP CREATE_KEYSPACE, but instead we’ll use the helpful command-completion features of cqlsh. 
+Type the following and then hit the Tab key:
+
+cqlsh> CREATE KEYSPACE my_keyspace WITH
+When you hit the Tab key, cqlsh begins completing the syntax of our command:
+
+cqlsh> CREATE KEYSPACE my_keyspace WITH replication = {'class': '
+This is informing us that in order to specify a keyspace, we also need to specify a replication strategy. Let’s Tab again to see what options we have:
+
+cqlsh> CREATE KEYSPACE my_keyspace WITH replication = {'class': '
+  NetworkTopologyStrategy    SimpleStrategy            
+  OldNetworkTopologyStrategy
+
+  The next option we’re presented with is a replication factor. For the simple strategy, this indicates how many nodes the data in this keyspace will be written to. 
+
+  Let’s have a look at our keyspace using theDESCRIBE KEYSPACE command:
+
+cqlsh> DESCRIBE KEYSPACE my_keyspace
+CREATE KEYSPACE my_keyspace WITH replication = {'class': 
+  'SimpleStrategy', 'replication_factor': '1'} AND 
+  durable_writes = true;
+
+ After you have created your own keyspace, you can switch to it in the shell by typing:
+
+cqlsh> USE my_keyspace;
+cqlsh:my_keyspace> 
+
+Now that we have a keyspace, we can create a table in our keyspace. To do this in cqlsh, use the following command:
+
+cqlsh:my_keyspace> CREATE TABLE user ( first_name text , 
+  
+ last_name text, PRIMARY KEY (first_name)) ;
+
+ The text and varchar types are synonymous and are used to store strings. We’ve specified the first_name column as our primary key and taken the defaults for other table options.
+We could have also created this table without switching to our keyspace by using the syntax CREATE TABLE my_keyspace.user (... 
+
+Writing and Reading Data in cqlsh
+
+To write a value, use the INSERT command:
+
+cqlsh:my_keyspace> INSERT INTO user (first_name, last_name ) 
+  VALUES ('Bill', 'Nguyen');
+
+We can use the SELECT COUNT command to make sure that the row was written:
+
+cqlsh:my_keyspace> SELECT COUNT (*) FROM user;
+ count
+-------
+     1
+
+(1 rows)
+
+Now that we know the data is there, let’s read it, using the SELECT command:
+
+cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill';
+
+ first_name | last_name
+------------+-----------
+       Bill |    Nguyen
+
+(1 rows)
+
+
+ALTER TABLE command 
+cqlsh:my_keyspace> ALTER TABLE user ADD title text;
+cqlsh:my_keyspace> DESCRIBE TABLE user;
+
+ You can delete a column using the DELETE command. Here we will delete the last_name column for the Bill row key:
+
+ cqlsh:my_keyspace> INSERT INTO user (first_name, last_name, title) 
+  VALUES ('Bill', 'Nguyen', 'Mr.');
+cqlsh:my_keyspace> INSERT INTO user (first_name, last_name) VALUES 
+  ('Mary', 'Rodriguez');
+
+cqlsh:my_keyspace> DELETE last_name FROM USER WHERE 
+  first_name='Bill';
+
+To make sure that it’s removed, we can query again:
+
+cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill';
+
+ first_name | last_name
+------------+-----------
+       Bill |      null
+
+(1 rows)
+
+Now we’ll clean up after ourselves by deleting the entire row. It’s the same command, but we don’t specify a column name:
+
+cqlsh:my_keyspace> DELETE FROM USER WHERE first_name='Bill';
+
+
+If we really want to clean up after ourselves, we can remove all data from the table using the TRUNCATE command, or even delete the table schema using the DROP TABLE command.
+
+cqlsh:my_keyspace> TRUNCATE user;
+cqlsh:my_keyspace> DROP TABLE user;
+
+TIMESTAMPS:___
+Each time you write data into Cassandra, a timestamp is generated for each column value that is updated. Internally, Cassandra uses these timestamps for resolving any conflicting changes that are made to the same value. Generally, the last timestamp wins.
+Let’s view the timestamps that were generated for our previous writes by adding the writetime() function to our SELECT command. We’ll do this on the lastname column and include a couple of other values for context:
+
+cqlsh:my_keyspace> SELECT first_name, last_name, 
+  writetime(last_name) FROM user;
+ 
+ We might expect that if we ask for the timestamp on first_name we’d get a similar result. However, it turns out we’re not allowed to ask for the timestamp on primary key columns:
+
+cqlsh:my_keyspace> SELECT WRITETIME(first_name) FROM user;
+
+Cassandra also allows us to specify a timestamp we want to use when performing writes. To do this, we’ll use the CQL UPDATE command for the first time. We’ll use the optional USING TIMESTAMP option to manually set a timestamp (note that the timestamp must be later than the one from our SELECT command, or the UPDATE will be ignored):
+
+cqlsh:my_keyspace> UPDATE user USING TIMESTAMP 1434373756626000 
+  SET last_name = 'Boateng' WHERE first_name = 'Mary' ;
+cqlsh:my_keyspace> SELECT first_name, last_name, 
+  WRITETIME(last_name) FROM user WHERE first_name = 'Mary';
+ 
+ first_name | last_name   | writetime(last_name)
+------------+-------------+---------------------
+  Mary      | Boateng     | 1434373756626000
+
+ TIME TO LIVE (TTL)
+One very powerful feature that Cassandra provides is the ability to expire data that is no longer needed. This expiration is very flexible and works at the level of individual column values. The time to live (or TTL) is a value that Cassandra stores for each column value to indicate how long to keep the value.
+
+The TTL value defaults to null, meaning that data that is written will not expire. Let’s show this by adding the TTL() function to a SELECT command in cqlsh to see the TTL value for Mary’s last name:
+
+cqlsh:my_keyspace> SELECT first_name, last_name, TTL(last_name) 
+  FROM user WHERE first_name = 'Mary';
+
+ first_name | last_name | ttl(last_name)
+------------+-----------+----------------
+       Mary |   Boateng |           null
+
+(1 rows)
+Now let’s set the TTL on the last name column to an hour (3,600 seconds) by adding the USING TTL option to our UPDATE command:
+
+cqlsh:my_keyspace> UPDATE user USING TTL 3600 SET last_name = 
+  'McDonald' WHERE first_name = 'Mary' ;
+cqlsh:my_keyspace> SELECT first_name, last_name, TTL(last_name) 
+  FROM user WHERE first_name = 'Mary';                                                                              
+
+ first_name | last_name   | ttl(last_name)
+------------+-------------+---------------
+  Mary      |  McDonald   |           3588
+
+(1 rows)

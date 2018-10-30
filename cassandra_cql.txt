@@ -5,3 +5,91 @@ Cassandra - CQL
 3)Cassandra defines a table to be a logical division that associates similar data. 
 4)However, when you’re working with Cassandra, you actually have a decision to make about the size of your rows: they can be wide or skinny, depending on the number of columns the row contains.A wide row means a row that has lots and lots (perhaps tens of thousands or even millions) of columns. Typically there is a smaller number of rows that go along with so many columns.
 5)Cassandra uses a special primary key called a composite key (or compound key) to represent wide rows, also called partitions. 
+6)The composite key consists of a partition key, plus an  optional set of clustering columns.  The partition key is used to determine the nodes on which rows are stored and can itself consist of multiple columns. The clustering columns are used to control how data is sorted for storage within a partition. Cassandra also supports an additional construct called a static column, which is for storing data that is not part of the primary key but is shared by every row in a partition.
+
+*****
+	primary key(RDBMS) --> composite key(for rows)
+	composite key --> partition key + (optional) clustering columns
+	partition key -->  determines the nodes on which rows are stored and can itself consist of multiple columns.
+	clustering columns --> used to control how data is sorted for storage within a partition
+	static column --> which is for storing data that is not part of the primary key but is shared by every row in a partition.
+*****
+Putting this all together, we have the basic Cassandra data structures:
+
+The column, which is a name/value pair
+The row, which is a container for columns referenced by a primary key
+The table, which is a container for rows
+The keyspace, which is a container for tables.
+The cluster, which is a container for keyspaces that spans one or more nodes
+
+Clusters -->
+the Cassandra database is specifically designed to be distributed over several machines operating together that appear as a single instance to the end user. So the outermost structure in Cassandra is the cluster, sometimes called the ring, because Cassandra assigns data to nodes in the cluster by arranging them in a ring.
+
+Keyspaces-->
+A cluster is a container for keyspaces. A keyspace is the outermost container for data in Cassandra, corresponding closely to a relational database. In the same way that a database is a container for tables in the relational model, a keyspace is a container for tables in the Cassandra data model. 
+
+Tables-->
+A table is a container for an ordered collection of rows, each of which is itself an ordered collection of columns. The ordering is determined by the columns, which are identified as keys.When you write data to a table in Cassandra, you specify values for one or more columns. That collection of values is called a row. At least one of the values you specify must be a primary key that serves as the unique identifier for that row.we don’t need to include a value for every column when we add a new row to the table.
+
+column-->
+A column is the most basic unit of data structure in the Cassandra data model. So far we’ve seen that a column contains a name and a value. We constrain each of the values to be of a particular type when we define the column.
+some other attributes of a column that we haven’t discussed yet: timestamps and time to live. These attributes are key to understanding how Cassandra uses time to keep data current.
+
+TIMESTAMPS-->
+Each time you write data into Cassandra, a timestamp is generated for each column value that is updated. Internally, Cassandra uses these timestamps for resolving any conflicting changes that are made to the same value. Generally, the last timestamp wins.
+
+Let’s view the timestamps that were generated for our previous writes by adding the writetime() function to our SELECT command. We’ll do this on the lastname column and include a couple of other values for context:
+
+cqlsh:my_keyspace> SELECT first_name, last_name, 
+  writetime(last_name) FROM user;
+ 
+ first_name | last_name | writetime(last_name)
+------------+-----------+----------------------
+       Mary | Rodriguez |     1434591198790252
+       Bill |    Nguyen |     1434591198798235
+
+(2 rows)
+we’re not allowed to ask for the timestamp on primary key columns:
+
+Cassandra also allows us to specify a timestamp we want to use when performing writes. To do this, we’ll use the CQL UPDATE command for the first time. We’ll use the optional USING TIMESTAMP option to manually set a timestamp (note that the timestamp must be later than the one from our SELECT command, or the UPDATE will be ignored):
+
+cqlsh:my_keyspace> UPDATE user USING TIMESTAMP 1434373756626000 
+  SET last_name = 'Boateng' WHERE first_name = 'Mary' ;
+cqlsh:my_keyspace> SELECT first_name, last_name, 
+  WRITETIME(last_name) FROM user WHERE first_name = 'Mary';
+ 
+ first_name | last_name   | writetime(last_name)
+------------+-------------+---------------------
+  Mary      | Boateng     | 1434373756626000
+ 
+
+
+ TIME TO LIVE (TTL)-->
+One very powerful feature that Cassandra provides is the ability to expire data that is no longer needed. This expiration is very flexible and works at the level of individual column values. The time to live (or TTL) is a value that Cassandra stores for each column value to indicate how long to keep the value.
+
+The TTL value defaults to null, meaning that data that is written will not expire. Let’s show this by adding the TTL() function to a SELECT command in cqlsh to see the TTL value for Mary’s last name:
+
+cqlsh:my_keyspace> SELECT first_name, last_name, TTL(last_name) 
+  FROM user WHERE first_name = 'Mary';
+
+ first_name | last_name | ttl(last_name)
+------------+-----------+----------------
+       Mary |   Boateng |           null
+
+ Now let’s set the TTL on the last name column to an hour (3,600 seconds) by adding the USING TTL option to our UPDATE command:
+
+cqlsh:my_keyspace> UPDATE user USING TTL 3600 SET last_name = 
+  'McDonald' WHERE first_name = 'Mary' ;
+cqlsh:my_keyspace> SELECT first_name, last_name, TTL(last_name) 
+  FROM user WHERE first_name = 'Mary';                                                                              
+
+ first_name | last_name   | ttl(last_name)
+------------+-------------+---------------
+  Mary      |  McDonald   |           3588
+
+(1 rows)
+If we want to set TTL across an entire row, we must provide a value for every non-primary key column in our INSERT or UPDATE command.
+
+(operations and basic and complex data types in cql)
+secondary indexes-------
+distributed hashtable model ----
