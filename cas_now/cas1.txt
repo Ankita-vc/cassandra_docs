@@ -1,0 +1,58 @@
+https://www.safaribooksonline.com/library/view/cassandra-the-definitive/9781491933657/ch02.html#chp-introducing
+https://docs.datastax.com/en/articles/cassandra/cassandrathenandnow.html
+
+
+1) CAssandra was developed by Facebook.
+
+2) Why?
+cassandra was developed by Facebook to fulfill the storage needs  Inbox search problem. (for faster writes)
+. In- box Search is a feature that enables users to search through their Facebook Inbox, billions of writes per day, and also scale with the number of users.Since users are served from data centers that are geographically distributed, being able to replicate data across data centers was key to keep search latencies down.
+
+3) It is based on Google's Bigtable and amazon's dynamo.
+https://www.safaribooksonline.com/library/view/cassandra-the-definitive/9781491933657/preface01.html#sect-pre.intro
+https://teddyma.gitbooks.io/learncassandra/content/about/the_history_of_cassandra.html
+https://docs.datastax.com/en/articles/cassandra/cassandrathenandnow.html
+https://blog.insightdatascience.com/cassandra-daughter-of-dynamo-and-bigtable-1b57b16229b9
+
+
+4) Cassandra has become one of the most popular NoSQL databases used today by companies such as Netflix, Instagram, and many more. Originally designed at Facebook, 
+
+5) Cassandra came from Amazon’s highly available Dynamo(Dynamo: Amazon’s Highly Available Key-value Store ) and Google’s BigTable(A Distributed Storage System for Structured Data) data model.
+
+
+6) Cassandra is highly available - There is no master node in cassandra to cordinate between read and write requests data is highly available.
+
+7) Cassandra is known for faster writes. why? 
+
+8) Why cassandra is popular?
+Its popularity is due in large part to the outstanding technical features it provides. It is durable, seamlessly scalable, and tuneably consistent. It performs blazingly fast writes, can store hundreds of terabytes of data, and is decentralized and symmetrical so there’s no single point of failure. It is highly available and offers a data model based on the Cassandra Query Language.
+
+9) WHat is cassandra?
+Apache Cassandra is an open source, distributed, decentralized, elastically scalable, highly available, fault-tolerant, tuneably consistent, row-oriented database that bases its distribution design on Amazon’s Dynamo and its data model on Google’s Bigtable.  Created at Facebook, it is now used at some of the most popular sites on the Web.” 
+
+Distributed and Decentralized--
+Cassandra is distributed, which means that it is capable of running on multiple machines while appearing to users as a unified whole. 
+Cassandra, however, is decentralized, meaning that every node is identical; no Cassandra node performs certain organizing operations distinct from any other node. Instead, Cassandra features a peer-to-peer protocol and uses gossip to maintain and keep in sync a list of nodes that are alive or dead. There is no master node.
+The fact that Cassandra is decentralized means that there is no single point of failure. All of the nodes in a Cassandra cluster function exactly the same. This is sometimes referred to as “server symmetry.”
+
+Elastic Scalability--
+Elastic scalability refers to a special property of horizontal scalability. It means that your cluster can seamlessly scale up and scale back down. 
+
+High Availability and Fault Tolerance--
+Cassandra is highly available. You can replace failed nodes in the cluster with no downtime, and you can replicate data to multiple data centers to offer improved local performance and prevent downtime if one data center experiences a catastrophe such as fire or flood.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+81wj4lsj38mkqx  id
+GztNOFkJZiwBVcV8

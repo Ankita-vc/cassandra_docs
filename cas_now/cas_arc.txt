@@ -1,0 +1,6 @@
+architecture----------------------
+
+failure detection algorithm and gossip protocol
+how does it know which replica to contact? (how does snitch perform its job.)
+how data is assigned to each node?
+ The coordinator identifies which nodes are replicas for the data that is being written or read and forwards the queries to them?(how)
